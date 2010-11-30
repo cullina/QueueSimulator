@@ -2,6 +2,8 @@ module Task where
 
 import System.Random
 
+import Data.List(transpose)
+
 data Task = Task {
       id       :: Int
     , arrival  :: Double
@@ -20,12 +22,24 @@ data CompletedTask = CompletedTask {
 
 
 
+uniform min range unif = range * unif + min
+
 
 exponential lambda unif = -1 * lambda * (log unif)
 
-uniform min range unif = range * unif + min
 
-poissonTaskStream spacing size gen = taskStream (exponential spacing) (exponential size) 0 0 gen
+pareto recipAlpha min unif = min / (unif ** recipAlpha)
+
+
+paretoFromMean recipAlpha mean = pareto recipAlpha ((1 - recipAlpha) * mean) 
+
+
+
+poissonTaskStream spacing size gen = 
+    taskStream (exponential spacing) (exponential size) 0 0 gen
+
+paretoTaskStream spacing alpha size gen = 
+    taskStream (exponential spacing) (paretoFromMean (1 / alpha) size) 0 0 gen
 
 
 taskStream spacingDist sizeDist id time g0 = 
@@ -52,4 +66,8 @@ statistics completed =
     let l     = length completed
         len   = fromIntegral l
         stats = map (\f -> sumStat f completed) [compSize, delay, slowdown]
-    in  (l, map (/ len) stats)
+    in  map (/ len) stats
+
+mergeStats statList = 
+    let l = fromIntegral $ length statList
+    in map (\x -> (sum x) / l) (transpose statList) 
