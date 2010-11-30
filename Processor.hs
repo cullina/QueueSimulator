@@ -5,8 +5,18 @@ import Queue
 
 class Processor a where
     newProcessor :: a
+    runToTime    :: a -> Double -> (a, Maybe CompletedTask)
+    acceptTask   :: a -> Task -> a
     step         :: a -> Task -> (a, Maybe CompletedTask)
     {- step should either accept the new task or give back a completed one -}
+
+    step server newTask =
+        let pair@(newServer, cTask) = runToTime server (arrival newTask)
+        in case cTask of
+             Nothing -> (acceptTask newServer newTask, Nothing)
+             Just _  -> pair
+
+
 
 data (Processor a) => QueueSystem a = QueueSystem {
       incoming  :: [Task]   
@@ -23,6 +33,10 @@ data SimpleServer = SimpleServer {
 instance Processor SimpleServer where
     newProcessor = SimpleServer 0 newQueue Nothing
 
+    acceptTask (SimpleServer time q task) newTask = 
+        SimpleServer time (enq q newTask) task
+
+    {-
     {- idle processor -}    
     step (SimpleServer time q Nothing) newTask =
         if empty q
@@ -38,14 +52,25 @@ instance Processor SimpleServer where
            else let completionTime = time + remaining
                     completedTask = (CompletedTask curTask completionTime)
                 in (SimpleServer completionTime q Nothing, Just completedTask)
+     -}
+
+    {- idle processor -}    
+    runToTime (SimpleServer time q Nothing) targetTime =
+        if empty q
+        then (SimpleServer targetTime q Nothing, Nothing)
+        else let (task, newQ) = deq q
+             in runToTime (SimpleServer time newQ (Just (beginTask task))) targetTime
+    {- working processor -}
+    runToTime (SimpleServer time q (Just (CurrentTask curTask remaining))) targetTime =
+        let timeToTarget = targetTime - time
+        in if remaining > timeToTarget
+           then let newCurTask = Just (CurrentTask curTask (remaining-timeToTarget))
+                in (SimpleServer targetTime q newCurTask, Nothing)
+           else let completionTime = time + remaining
+                    completedTask = CompletedTask curTask completionTime
+                in (SimpleServer completionTime q Nothing, Just completedTask)
 
 
-{-
-data ServerPair = {
-      smallServer :: SimpleServer
-    , largeServer :: SimpleServer
-    } 
--}
 
 newSystem taskStream = QueueSystem taskStream newProcessor
 

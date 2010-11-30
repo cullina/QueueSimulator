@@ -10,7 +10,7 @@ class Router a where
 
 data RoundRobin = RoundRobin {
       curServer  :: Int
-      numServers :: Int
+    , numServers :: Int
     }
 
 instance Router RoundRobin where
