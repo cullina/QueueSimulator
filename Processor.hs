@@ -4,7 +4,7 @@ import Task
 import Queue
 
 class Processor a where
-    newProcessor :: a
+    newProcessor :: Double -> a
     runToTime    :: a -> Double -> (a, Maybe CompletedTask)
     acceptTask   :: a -> Task -> a
     step         :: a -> Task -> (a, Maybe CompletedTask)
@@ -31,7 +31,7 @@ data SimpleServer = SimpleServer {
     }
 
 instance Processor SimpleServer where
-    newProcessor = SimpleServer 0 newQueue Nothing
+    newProcessor _ = SimpleServer 0 newQueue Nothing
 
     acceptTask (SimpleServer time q task) newTask = 
         SimpleServer time (enq q newTask) task
@@ -72,7 +72,7 @@ instance Processor SimpleServer where
 
 
 
-newSystem taskStream = QueueSystem taskStream newProcessor
+newSystem param taskStream = QueueSystem taskStream (newProcessor param)
 
 
 runSystem (QueueSystem (t:ts) processor) =

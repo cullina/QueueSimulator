@@ -12,7 +12,7 @@ data (Router a) => ServerPair a = ServerPair {
     } 
 
 instance (Router a) => Processor (ServerPair a) where
-    newProcessor = ServerPair (newRouter 1) newProcessor newProcessor
+    newProcessor param = ServerPair (newRouter param 1) (newProcessor param) (newProcessor param)
 
     runToTime sp@(ServerPair r a b) targetTime = 
         runToTime' sp targetTime 0

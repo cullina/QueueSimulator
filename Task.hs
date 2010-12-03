@@ -25,7 +25,7 @@ data CompletedTask = CompletedTask {
 uniform min range unif = range * unif + min
 
 
-exponential lambda unif = -1 * lambda * (log unif)
+exponential mean unif = -1 * mean * (log unif)
 
 
 pareto recipAlpha min unif = min / (unif ** recipAlpha)
@@ -49,6 +49,26 @@ taskStream spacingDist sizeDist id time g0 =
         size    = sizeDist y
         task    = Task id time size
     in task : taskStream spacingDist sizeDist (id + 1) (time + spacing) g2
+
+
+{- ids will be incorrect -}
+piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id time state interval g0 =  
+    let (x, g1) = random g0
+        (y, g2) = random g1
+    in if time > interval
+       then let newInterval = interval + (iDist x)
+                newState    = not state
+                spacing     = if state then spD1 y else spD2 y
+                newTime     = interval + spacing
+            in piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id newTime newState newInterval g2
+       else let (spacing, size) = if state
+                                  then (spD1 x, szD1 y)
+                                  else (spD2 x, szD2 y)
+                task            = Task id time size
+                newTime         = time + spacing
+            in task : piecewiseTaskStream spD1 szD1 spD2 szD2 iDist (id + 1) newTime state interval g2
+
+
 
 
 beginTask task = CurrentTask task (size task)

@@ -4,7 +4,7 @@ import Task
 
 
 class Router a where
-    newRouter    :: Double -> a
+    newRouter    :: Double -> Double -> a
     route        :: a -> Task -> Int
     updateRouter :: a -> Task -> a
 
@@ -14,7 +14,7 @@ data RoundRobin = RoundRobin {
     }
 
 instance Router RoundRobin where
-    newRouter _ = RoundRobin 0 2
+    newRouter _ _ = RoundRobin 0 2
 
     route (RoundRobin a b) t = a
 
@@ -29,7 +29,7 @@ data SizeSplit = SizeSplit {
     }
 
 instance Router SizeSplit where
-    newRouter decay = SizeSplit decay 0 0
+    newRouter decay meanLogEst = SizeSplit decay meanLogEst 0
 
     route (SizeSplit decayRate meanLogEst estimateAge) (Task id arrival size) = 
         let logSize      = log size
