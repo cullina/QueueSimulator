@@ -14,23 +14,67 @@ data SimpleAccum = SimpleAccum {
     }
 
 instance Accumulator SimpleAccum where
-    accum (SimpleAccum sum count) = sum / fromIntegral count
+    accum (SimpleAccum sum count) = 
+        sum / fromIntegral count
 
     update (SimpleAccum sum count) (x, _) = 
         SimpleAccum (sum + x) (count + 1)
         
+{--------}
+
+data IntAccum = IntAccum {
+      accumI     :: Double
+    , lastTimeI  :: Double
+    }
+
+instance Accumulator IntAccum where
+    accum (IntAccum i t1) =
+        i / t1
+
+    update (IntAccum i t1) (x, t) =
+        IntAccum (i + (t - t1) * x) t
+
+{--------}
+
+data SymIntAccum = SymIntAccum {
+      accumSI     :: Double
+    , lastValueSI :: Double
+    , lastTimeSI  :: Double
+
+    } 
+
+instance Accumulator SymIntAccum where
+    accum (SymIntAccum i x1 t1) =
+        i / t1
+
+    update (SymIntAccum i x1 t1) (x, t) =
+        SymIntAccum (i + (t - t1) * (x + x1) / 2) t x
+
+{--------}
+
+data GeomAccum = GeomAccum {
+      decayRateG :: Double
+    , accumG     :: Double
+    }
+
+instance Accumulator GeomAccum where
+    accum = accumG
+
+    update (GeomAccum r a) (x, _) =
+        GeomAccum r (r * x + (1 - r) * a)
+
 
 {--------}
 
 data ExpAccum = ExpAccum {
-      decayRate :: Double
-    , numerVal  :: Double
-    , denomVal  :: Double
-    , lastTime  :: Double
+      decayRateE :: Double
+    , numerValE  :: Double
+    , denomValE  :: Double
+    , lastTimeE  :: Double
     }
 
 instance Accumulator ExpAccum where
-    accum x = (numerVal x) / (denomVal x)
+    accum x = (numerValE x) / (denomValE x)
 
     update (ExpAccum r n d oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
@@ -40,19 +84,37 @@ instance Accumulator ExpAccum where
 
 {--------}
 
-data DumbExp = DumbExp {
-      decayRateD :: Double
-    , accumVal   :: Double
-    , lastTimeD   :: Double
+data IntExpAccum = IntExpAccum {
+      decayRateIE :: Double
+    , accumIE     :: Double
+    , lastTimeIE  :: Double
     }
 
-instance Accumulator DumbExp where
-    accum = accumVal 
+instance Accumulator IntExpAccum where
+    accum = accumIE
 
-    update (DumbExp r a oldT) (x, t) =
+    update (IntExpAccum r a oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
             newA        = decayFactor * a + (1 - decayFactor) * x
-        in DumbExp r newA t
+        in IntExpAccum r newA t
+
+{--------}
+
+data SymIntExpAccum = SymIntExpAccum {
+      decayRateSIE :: Double
+    , accumSIE     :: Double
+    , lastValueSIE :: Double
+    , lastTimeSIE  :: Double
+    }
+
+instance Accumulator SymIntExpAccum where
+    accum = accumSIE 
+
+    update (SymIntExpAccum r a oldX oldT) (x, t) =
+        let decayFactor = exp (r * (oldT - t))
+            halfDecay   = exp (r * (oldT - t) / 2)
+            newA        = decayFactor * a + (1 - halfDecay) * (x + halfDecay * oldX)
+        in SymIntExpAccum r newA x t
 
 {--------}
 
