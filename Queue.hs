@@ -27,19 +27,35 @@ peek (Queue xs []) = peek (Queue [] (reverse xs))
 
 
 data CountedQueue a = CountedQueue {
-      queue  :: Queue a
-    , length :: Int
+      queueC  :: Queue a
+    , lengthC :: Int
     }
 
 newCountedQueue = CountedQueue newQueue 0
 
 enqC (CountedQueue q l) x = CountedQueue (enq q x) (l + 1)
 
-deqC (CountedQueue q l) = let (a, b) = deq q
-                          in (a, CountedQueue b (l - 1))
+deqC (CountedQueue q l) = let (x, newQ) = deq q
+                          in (x, CountedQueue newQ (l - 1))
 
-peekC (CountedQueue q l) = let (a, b) = peek q
-                           in (a, CountedQueue b l)
+peekC (CountedQueue q l) = let (x, newQ) = peek q
+                           in (x, CountedQueue newQ l)
+
+emptyC = empty . queueC
 
 
-emptyC = empty . queue
+data SummedQueue a b = SummedQueue {
+      queueS  :: Queue a
+    , lengthS :: Int
+    , sum     :: b
+    }
+
+enqS f (SummedQueue q l s) x = SummedQueue (enq q x) (l + 1) (s + f x)
+
+deqS f (SummedQueue q l s) = let (x, newQ) = deq q
+                             in (x, SummedQueue newQ (l - 1) (s - f x))
+
+peekS (SummedQueue q l s) = let (x, newQ) = peek q
+                            in (x, SummedQueue newQ l s)
+
+emptyS = empty . queueS
