@@ -8,6 +8,20 @@ class Accumulator a where
 
 {--------}
 
+data SimpleAccum = SimpleAccum {
+      sum :: Double
+    , count :: Int
+    }
+
+instance Accumulator SimpleAccum where
+    accum (SimpleAccum sum count) = sum / fromIntegral count
+
+    update (SimpleAccum sum count) (x, _) = 
+        SimpleAccum (sum + x) (count + 1)
+        
+
+{--------}
+
 data ExpAccum = ExpAccum {
       decayRate :: Double
     , numerVal  :: Double
