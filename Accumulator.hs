@@ -3,7 +3,7 @@ module Accumulator where
 import Queue
 
 class Accumulator a where
-    accum  :: a -> Double
+    value  :: a -> Double
     update :: a -> (Double, Double) -> a
 
 {--------}
@@ -14,7 +14,7 @@ data SimpleAccum = SimpleAccum {
     }
 
 instance Accumulator SimpleAccum where
-    accum (SimpleAccum sum count) = 
+    value (SimpleAccum sum count) = 
         sum / fromIntegral count
 
     update (SimpleAccum sum count) (x, _) = 
@@ -28,7 +28,7 @@ data IntAccum = IntAccum {
     }
 
 instance Accumulator IntAccum where
-    accum (IntAccum i t1) =
+    value (IntAccum i t1) =
         i / t1
 
     update (IntAccum i t1) (x, t) =
@@ -44,7 +44,7 @@ data SymIntAccum = SymIntAccum {
     } 
 
 instance Accumulator SymIntAccum where
-    accum (SymIntAccum i x1 t1) =
+    value (SymIntAccum i x1 t1) =
         i / t1
 
     update (SymIntAccum i x1 t1) (x, t) =
@@ -58,7 +58,7 @@ data GeomAccum = GeomAccum {
     }
 
 instance Accumulator GeomAccum where
-    accum = accumG
+    value = accumG
 
     update (GeomAccum r a) (x, _) =
         GeomAccum r (r * x + (1 - r) * a)
@@ -74,7 +74,7 @@ data ExpAccum = ExpAccum {
     }
 
 instance Accumulator ExpAccum where
-    accum x = (numerValE x) / (denomValE x)
+    value x = (numerValE x) / (denomValE x)
 
     update (ExpAccum r n d oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
@@ -91,7 +91,7 @@ data IntExpAccum = IntExpAccum {
     }
 
 instance Accumulator IntExpAccum where
-    accum = accumIE
+    value = accumIE
 
     update (IntExpAccum r a oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
@@ -108,7 +108,7 @@ data SymIntExpAccum = SymIntExpAccum {
     }
 
 instance Accumulator SymIntExpAccum where
-    accum = accumSIE 
+    value = accumSIE 
 
     update (SymIntExpAccum r a oldX oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
@@ -124,7 +124,7 @@ data FixedSample = FixedSample {
     }
 
 instance Accumulator FixedSample where
-    accum (FixedSample _ (SummedQueue _ length sum))
+    value (FixedSample _ (SummedQueue _ length sum))
         = sum / fromIntegral length
 
     update (FixedSample maxLen q) (x, _) = 
@@ -149,7 +149,7 @@ removeOldData removalTime q =
        else newQ
 
 instance Accumulator FixedInterval where
-    accum (FixedInterval _ (SummedQueue _ length sum))
+    value (FixedInterval _ (SummedQueue _ length sum))
         = sum / fromIntegral length
 
     update (FixedInterval interval q) pair@(x, t) = 
