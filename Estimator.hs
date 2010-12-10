@@ -2,31 +2,36 @@ module Estimator where
 
 import Accumulator
 
-{-
+
 class Estimator a where
     updateEst  :: a -> (Double, Double) -> a
     parameters :: a -> (Double, Double)
--}
-{--------}
-
-paretoWorkThreshold (alpha, xMin) p = xMin / (1 - p) ** recip (alpha - 1)
 
 {--------}
 
-data (Accumulator a) => PairEst a = PairEst {
+threshold (alpha, xMin) p = xMin / (1 - p) ** recip (alpha - 1)
+
+halfThreshold (alpha, xMin) = xMin * 2 ** recip (alpha - 1)
+
+
+{--------}
+
+data Accumulator a => PairEst a = PairEst {
       accumF   :: Double -> Double
     , convertF :: Double -> Double -> (Double,  Double)
     , basicAcc :: a
     , funcAcc  :: a
     }
 
-updateEst (PairEst accumF convertF basicAcc funcAcc) (x, t) =
-    let newBasicAcc = update basicAcc (x, t)
-        newFuncAcc  = update funcAcc (accumF x, t)
-    in PairEst accumF convertF newBasicAcc newFuncAcc
+instance Accumulator a => Estimator (PairEst a) where
+
+    updateEst (PairEst accumF convertF basicAcc funcAcc) (x, t) =
+        let newBasicAcc = update basicAcc (x, t)
+            newFuncAcc  = update funcAcc (accumF x, t)
+        in PairEst accumF convertF newBasicAcc newFuncAcc
     
-parameters (PairEst accumF convertF basicAcc funcAcc) =
-    convertF (value basicAcc) (value funcAcc)
+    parameters (PairEst accumF convertF basicAcc funcAcc) =
+        convertF (value basicAcc) (value funcAcc)
 
 {--------}
 

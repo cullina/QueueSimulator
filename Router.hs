@@ -1,12 +1,13 @@
 module Router where
 
 import Task
-
+import Estimator
 
 class Router a where
-    newRouter    :: Double -> Double -> a
     route        :: a -> Task -> Int
     updateRouter :: a -> Task -> a
+
+{--------}
 
 data RoundRobin = RoundRobin {
       curServer  :: Int
@@ -14,34 +15,23 @@ data RoundRobin = RoundRobin {
     }
 
 instance Router RoundRobin where
-    newRouter _ _ = RoundRobin 0 2
-
     route (RoundRobin a b) t = a
 
     updateRouter (RoundRobin a b) t = RoundRobin (mod (a + 1) b) b
 
 
+{--------}
 
-data SizeSplit = SizeSplit {
-      decayRate         :: Double
-    , meanLogEst        :: Double
-    , estimateTimestamp :: Double
+data Estimator a => SizeSplit a = SizeSplit {
+      estimator :: a
     }
 
-instance Router SizeSplit where
-    newRouter decay meanLogEst = SizeSplit decay meanLogEst 0
+instance Estimator a => Router (SizeSplit a) where
+    route (SizeSplit estimator) (Task id arrival size) = 
+        let threshold = halfThreshold $ parameters estimator
+        in if size > threshold then 1 else 0
 
-    route (SizeSplit decayRate meanLogEst estimateAge) (Task id arrival size) = 
-        let logSize      = log size
-            medianLogEst = (log 2) * meanLogEst
-            serverNum    = if logSize > medianLogEst then 1 else 0
-        in serverNum
-
-    updateRouter (SizeSplit decayRate meanLogEst estimateAge) (Task id arrival size) = 
-        let logSize      = log size
-            decayFactor  = exp (decayRate * (estimateAge - arrival))
-            newMean      = decayFactor * meanLogEst + (1 - decayFactor) * logSize
-            newRouter    = SizeSplit decayRate newMean arrival
-        in newRouter
+    updateRouter (SizeSplit estimator) (Task id arrival size) = 
+        SizeSplit (updateEst estimator (size, arrival))
 
 
