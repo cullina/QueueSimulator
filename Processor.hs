@@ -2,27 +2,19 @@ module Processor where
 
 import Task
 import Queue
+import Router
 
 class Processor a where
-    newProcessor :: Double -> a
-    runToTime    :: a -> Double -> (a, Maybe CompletedTask)
+    runToTime    :: a -> Double -> (a, [CompletedTask])
     acceptTask   :: a -> Task -> a
-    step         :: a -> Task -> (a, Maybe CompletedTask)
+    step         :: a -> Task -> (a, [CompletedTask])
     {- step should either accept the new task or give back a completed one -}
 
     step server newTask =
-        let pair@(newServer, cTask) = runToTime server (arrival newTask)
-        in case cTask of
-             Nothing -> (acceptTask newServer newTask, Nothing)
-             Just _  -> pair
+        let (newServer, cTasks) = runToTime server (arrival newTask)
+        in (acceptTask newServer newTask, cTasks)
 
-
-
-data (Processor a) => QueueSystem a = QueueSystem {
-      incoming  :: [Task]   
-    , processor :: a
-    }
-
+{--------}
 
 data SimpleServer = SimpleServer {
       time      :: Double
@@ -31,52 +23,59 @@ data SimpleServer = SimpleServer {
     }
 
 instance Processor SimpleServer where
-    newProcessor _ = SimpleServer 0 newQueue Nothing
+
 
     acceptTask (SimpleServer time q task) newTask = 
         SimpleServer time (enq q newTask) task
 
-    {-
-    {- idle processor -}    
-    step (SimpleServer time q Nothing) newTask =
-        if empty q
-        then (SimpleServer (arrival newTask) (enq q newTask) Nothing, Nothing)
-        else let (task, newQ) = deq q
-             in step (SimpleServer time newQ (Just (beginTask task))) newTask 
-    {- working processor -}
-    step (SimpleServer time q (Just (CurrentTask curTask remaining))) newTask =
-        let timeToArrival = arrival newTask - time
-        in if remaining > timeToArrival
-           then let newCurTask = (Just (CurrentTask curTask (remaining-timeToArrival)))
-                in (SimpleServer (arrival newTask) (enq q newTask) newCurTask, Nothing)
-           else let completionTime = time + remaining
-                    completedTask = (CompletedTask curTask completionTime)
-                in (SimpleServer completionTime q Nothing, Just completedTask)
-     -}
-
-    {- idle processor -}    
     runToTime (SimpleServer time q Nothing) targetTime =
-        if empty q
-        then (SimpleServer targetTime q Nothing, Nothing)
-        else let (task, newQ) = deq q
-             in runToTime (SimpleServer time newQ (Just (beginTask task))) targetTime
-    {- working processor -}
-    runToTime (SimpleServer time q (Just (CurrentTask curTask remaining))) targetTime =
-        let timeToTarget = targetTime - time
-        in if remaining > timeToTarget
-           then let newCurTask = Just (CurrentTask curTask (remaining-timeToTarget))
-                in (SimpleServer targetTime q newCurTask, Nothing)
-           else let completionTime = time + remaining
-                    completedTask = CompletedTask curTask completionTime
-                in (SimpleServer completionTime q Nothing, Just completedTask)
+        runToTime' (SimpleServer time q Nothing) targetTime []
+
+{- idle processor -}    
+runToTime' (SimpleServer time q Nothing) targetTime cTasks =
+    if empty q
+    then (SimpleServer targetTime q Nothing, cTasks)
+    else let (task, newQ) = deq q
+             newServer    = SimpleServer time newQ (Just (beginTask task))
+         in runToTime' newServer targetTime cTasks
+
+{- working processor -}
+runToTime' (SimpleServer time q (Just (CurrentTask curTask remaining))) targetTime cTasks =
+    let timeToTarget = targetTime - time
+    in if remaining > timeToTarget
+       then let newCurTask = Just (CurrentTask curTask (remaining - timeToTarget))
+            in (SimpleServer targetTime q newCurTask, cTasks)
+       else let completionTime = time + remaining
+                completedTask  = CompletedTask curTask completionTime
+                newServer      = SimpleServer completionTime q Nothing
+            in runToTime' newServer targetTime (completedTask : cTasks)
 
 
+newSingleServer = SimpleServer 0 newQueue Nothing
 
-newSystem param taskStream = QueueSystem taskStream (newProcessor param)
+{--------}
+
+data (Router a) => ServerPair a = ServerPair {
+      router      :: a
+    , smallServer :: SimpleServer
+    , largeServer :: SimpleServer
+    } 
+
+instance (Router a) => Processor (ServerPair a) where
+    
+    runToTime (ServerPair router smallServer largeServer) targetTime = 
+        let (newSmallServer, smallCTasks) = runToTime smallServer targetTime
+            (newLargeServer, largeCTasks) = runToTime largeServer targetTime
+            newServerPair = ServerPair router newSmallServer newLargeServer
+        in (newServerPair, smallCTasks ++ largeCTasks)
 
 
-runSystem (QueueSystem (t:ts) processor) =
-    let (newProc, output) = step processor t
-    in case output of
-         Nothing    -> runSystem (QueueSystem ts newProc)
-         Just cTask -> cTask : runSystem (QueueSystem (t:ts) newProc)
+    acceptTask (ServerPair r a b) task = 
+        let serverNum = route r task
+            newR      = updateRouter r task
+        in if serverNum == 0
+           then ServerPair newR (acceptTask a task) b
+           else ServerPair newR a (acceptTask b task)
+
+newServerPair router = 
+        ServerPair router newSingleServer newSingleServer
