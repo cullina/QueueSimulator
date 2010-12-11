@@ -6,6 +6,7 @@ import Estimator
 class Router a where
     route        :: a -> Task -> Int
     updateRouter :: a -> Task -> a
+    routerStats  :: a -> [Double]
 
 {--------}
 
@@ -19,6 +20,7 @@ instance Router RoundRobin where
 
     updateRouter (RoundRobin a b) t = RoundRobin (mod (a + 1) b) b
 
+    routerStats = const []
 
 {--------}
 
@@ -33,6 +35,7 @@ instance Estimator a => Router (SizeSplit a) where
     updateRouter (SizeSplit estimator) (Task id arrival size) = 
         SizeSplit (updateEst estimator (size, arrival))
 
-{--------}
+    routerStats ss = [threshold ss]
+
 
 threshold (SizeSplit e) = workMedian $ parameters e

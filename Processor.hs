@@ -8,6 +8,7 @@ class Processor a where
     runToTime    :: a -> Double -> (a, [CompletedTask])
     acceptTask   :: a -> Task -> a
     step         :: a -> Task -> (a, [CompletedTask])
+    stats        :: a -> [Double] 
     {- step should accept the new task and give back all completed ones -}
 
     step server newTask =
@@ -24,12 +25,13 @@ data SimpleServer = SimpleServer {
 
 instance Processor SimpleServer where
 
-
     acceptTask (SimpleServer time q task) newTask = 
         SimpleServer time (enq q newTask) task
 
     runToTime (SimpleServer time q Nothing) targetTime =
         runToTime' (SimpleServer time q Nothing) targetTime []
+
+    stats = const []
 
 {- idle processor -}    
 runToTime' (SimpleServer time q Nothing) targetTime cTasks =
@@ -77,10 +79,10 @@ instance (Router a) => Processor (ServerPair a) where
            then ServerPair newR (acceptTask a task) b
            else ServerPair newR a (acceptTask b task)
 
+    stats (ServerPair r a b) =
+        routerStats r
+
 newServerPair router = 
         ServerPair router newSingleServer newSingleServer
 
 {--------}
-
-extractThreshold (ServerPair ss@(SizeSplit e) a b) =
-    threshold ss
