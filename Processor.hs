@@ -8,7 +8,7 @@ class Processor a where
     runToTime    :: a -> Double -> (a, [CompletedTask])
     acceptTask   :: a -> Task -> a
     step         :: a -> Task -> (a, [CompletedTask])
-    {- step should either accept the new task or give back a completed one -}
+    {- step should accept the new task and give back all completed ones -}
 
     step server newTask =
         let (newServer, cTasks) = runToTime server (arrival newTask)
@@ -79,3 +79,8 @@ instance (Router a) => Processor (ServerPair a) where
 
 newServerPair router = 
         ServerPair router newSingleServer newSingleServer
+
+{--------}
+
+extractThreshold (ServerPair ss@(SizeSplit e) a b) =
+    threshold ss

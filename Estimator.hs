@@ -9,9 +9,9 @@ class Estimator a where
 
 {--------}
 
-threshold (alpha, xMin) p = xMin / (1 - p) ** recip (alpha - 1)
+workQuantile (alpha, xMin) p = xMin * recip (1 - p) ** recip (alpha - 1)
 
-halfThreshold (alpha, xMin) = xMin * 2 ** recip (alpha - 1)
+workMedian (alpha, xMin) = xMin * 2 ** recip (alpha - 1)
 
 
 {--------}

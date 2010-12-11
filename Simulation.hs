@@ -35,17 +35,16 @@ massSimulate numSeeds numTasks system load decay seed =
 
 
 data (Processor a) => QueueSystem a b c = QueueSystem {
-      procStatFun    :: b -> a -> b
-    , taskStatFun    :: c -> [CompletedTask] -> c
-    , incoming       :: [Task]   
-    , processor      :: a
-    , processorStats :: b
-    , taskStats      :: c
+      extractProcStat :: a -> b
+    , incoming        :: [Task]   
+    , processor       :: a
+    , processorStats  :: [b]
+    , completedTasks  :: [CompletedTask]
     }
 
 
-runSystem (QueueSystem pSF tSF (t:ts) processor pStats tStats) =
+runSystem (QueueSystem extractPS (t:ts) processor pStats completedTasks) =
     let (newProc, cTasks) = step processor t
-        newPStats         = pSF pStats newProc
-        newTStats         = tSF tStats cTasks
-    in runSystem (QueueSystem pSF tSF (t:ts) newProc newPStats newTStats)
+        newPStats         = extractPS newProc : pStats
+        newCompletedTasks = cTasks ++ completedTasks
+    in runSystem (QueueSystem extractPS (t:ts) newProc newPStats newCompletedTasks)

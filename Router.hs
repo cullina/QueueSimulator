@@ -27,11 +27,12 @@ data Estimator a => SizeSplit a = SizeSplit {
     }
 
 instance Estimator a => Router (SizeSplit a) where
-    route (SizeSplit estimator) (Task id arrival size) = 
-        let threshold = halfThreshold $ parameters estimator
-        in if size > threshold then 1 else 0
+    route ss (Task id arrival size) = 
+        if size > threshold ss then 1 else 0
 
     updateRouter (SizeSplit estimator) (Task id arrival size) = 
         SizeSplit (updateEst estimator (size, arrival))
 
+{--------}
 
+threshold (SizeSplit e) = workMedian $ parameters e
