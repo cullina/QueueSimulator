@@ -22,6 +22,9 @@ instance Router RoundRobin where
 
     routerStats = const []
 
+
+newRoundRobin = RoundRobin 0 2
+
 {--------}
 
 data Estimator a => SizeSplit a = SizeSplit {
@@ -62,4 +65,10 @@ instance Router DirectSplit where
 
     routerStats (DirectSplit conv sens diff) = [diff]
 
+
+newDirectSplit conv sens = DirectSplit conv sens 0
+
+{---------}
+
 sgn x = if x >= 0 then 1 else 0
+
