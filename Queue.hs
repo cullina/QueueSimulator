@@ -59,3 +59,5 @@ peekS (SummedQueue q l s) = let (x, newQ) = peek q
                             in (x, SummedQueue newQ l s)
 
 emptyS = empty . queueS
+
+newSummedQueue = SummedQueue newQueue 0 0.0
