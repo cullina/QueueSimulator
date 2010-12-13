@@ -2,6 +2,8 @@ module Simulation where
 
 import Processor
 import Router
+import Estimator
+import Accumulator
 import Task
 import System.Random
 
@@ -34,20 +36,34 @@ massSimulate numSeeds numTasks system load decay seed =
 {--------}
 
 
-data (Processor a) => QueueSystem a b c = QueueSystem {
-      extractProcStat :: a -> b
-    , incoming        :: [Task]   
+data (Processor a) => QueueSystem a = QueueSystem {
+      incoming        :: [Task]   
     , processor       :: a
-    , processorStats  :: [b]
+    , processorStats  :: [[Double]]
     , completedTasks  :: [CompletedTask]
     }
 
 
-runSystem (QueueSystem extractPS (t:ts) processor pStats completedTasks) =
+runSystem (QueueSystem (t:ts) processor pStats completedTasks) =
     let (newProc, cTasks) = step processor t
-        newPStats         = extractPS newProc : pStats
+        newPStats         = stats newProc : pStats
         newCompletedTasks = cTasks ++ completedTasks
-    in runSystem (QueueSystem extractPS (t:ts) newProc newPStats newCompletedTasks)
+    in runSystem (QueueSystem (t:ts) newProc newPStats newCompletedTasks)
 
 
-system1 tasks = QueueSystem (const 0) tasks xo
+newSystem tasks processor = QueueSystem tasks processor [] []
+
+exampleProc1 = newServerPair $ newRoundRobin
+
+exampleProc2 = newServerPair $ SizeSplit $ newRecipEst $ newExpAccum 1
+
+exampleProc3 = newServerPair $ newDirectSplit id 0.1
+
+
+newEstProc estimator accumulator decay = 
+    newServerPair $ SizeSplit $ estimator $ accumulator decay
+
+newDirProc function sensitivity =
+    newServerPair $ newDirectSplit function sensitivity
+
+newStream load gen = paretoTaskStream 0.5 2 load gen
