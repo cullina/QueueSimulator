@@ -8,7 +8,6 @@ class Processor a where
     runToTime    :: a -> Double -> (a, [CompletedTask])
     acceptTask   :: a -> Task -> a
     step         :: a -> Task -> (a, [CompletedTask])
-    stats        :: a -> [Double] 
     {- step should accept the new task and give back all completed ones -}
 
     step server newTask =
@@ -31,7 +30,6 @@ instance Processor SimpleServer where
     runToTime (SimpleServer time q Nothing) targetTime =
         runToTime' (SimpleServer time q Nothing) targetTime []
 
-    stats = const []
 
 {- idle processor -}    
 runToTime' (SimpleServer time q Nothing) targetTime cTasks =
@@ -80,8 +78,6 @@ instance (Router a) => Processor (ServerPair a) where
            then ServerPair newR (acceptTask a newTask) b
            else ServerPair newR a (acceptTask b newTask)
 
-    stats (ServerPair r a b) =
-        routerStats r
 
 newServerPair router = 
         ServerPair router newSingleServer newSingleServer

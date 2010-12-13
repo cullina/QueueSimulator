@@ -39,19 +39,13 @@ massSimulate numSeeds numTasks system load decay seed =
 data (Processor a) => QueueSystem a = QueueSystem {
       incoming        :: [Task]   
     , processor       :: a
-    , processorStats  :: [[Double]]
-    , completedTasks  :: [CompletedTask]
     }
 
 
-runSystem (QueueSystem (t:ts) processor pStats completedTasks) =
+runSystem (QueueSystem (t:ts) processor) =
     let (newProc, cTasks) = step processor t
-        newPStats         = stats newProc : pStats
-        newCompletedTasks = cTasks ++ completedTasks
-    in runSystem (QueueSystem (t:ts) newProc newPStats newCompletedTasks)
+    in cTasks ++ runSystem (QueueSystem (t:ts) newProc)
 
-
-newSystem tasks processor = QueueSystem tasks processor [] []
 
 exampleProc1 = newServerPair $ newRoundRobin
 
