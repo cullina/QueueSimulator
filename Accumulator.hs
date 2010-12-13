@@ -10,15 +10,17 @@ class Accumulator a where
 
 data SimpleAccum = SimpleAccum {
       sum :: Double
-    , count :: Int
+    , count :: Double
     }
 
 instance Accumulator SimpleAccum where
     value (SimpleAccum sum count) = 
-        sum / fromIntegral count
+        sum / count
 
     update (SimpleAccum sum count) (x, _) = 
         SimpleAccum (sum + x) (count + 1)
+
+newSimpleAccum = SimpleAccum 0 0
         
 {--------}
 
@@ -33,6 +35,8 @@ instance Accumulator IntAccum where
 
     update (IntAccum i t1) (x, t) =
         IntAccum (i + (t - t1) * x) t
+
+newIntAccum = IntAccum 0 0
 
 {--------}
 
@@ -50,6 +54,8 @@ instance Accumulator SymIntAccum where
     update (SymIntAccum i x1 t1) (x, t) =
         SymIntAccum (i + (t - t1) * (x + x1) / 2) t x
 
+newSymIntAccum = SymIntAccum 0 0 0
+
 {--------}
 
 data GeomAccum = GeomAccum {
@@ -63,6 +69,7 @@ instance Accumulator GeomAccum where
     update (GeomAccum r a) (x, _) =
         GeomAccum r (r * x + (1 - r) * a)
 
+newGeomAccum decay = GeomAccum decay 0
 
 {--------}
 
@@ -82,6 +89,8 @@ instance Accumulator ExpAccum where
             newD        = 1 + decayFactor * d 
         in ExpAccum r newN newD t
 
+newExpAccum decay = ExpAccum decay 0 0 0
+
 {--------}
 
 data IntExpAccum = IntExpAccum {
@@ -97,6 +106,8 @@ instance Accumulator IntExpAccum where
         let decayFactor = exp (r * (oldT - t))
             newA        = decayFactor * a + (1 - decayFactor) * x
         in IntExpAccum r newA t
+
+newIntExpAccum decay = IntExpAccum decay 0 0
 
 {--------}
 
@@ -116,6 +127,8 @@ instance Accumulator SymIntExpAccum where
             newA        = decayFactor * a + (1 - halfDecay) * (x + halfDecay * oldX)
         in SymIntExpAccum r newA x t
 
+newSymIntExpAccum decay = SymIntExpAccum decay 0 0 0
+
 {--------}
 
 data FixedSample = FixedSample {
@@ -133,6 +146,8 @@ instance Accumulator FixedSample where
                      then snd . deqS id $ newQ
                      else newQ
         in FixedSample maxLen finalQ
+
+newFixedSample length = FixedSample length newSummedQueue
 
 {--------}
 
@@ -157,3 +172,5 @@ instance Accumulator FixedInterval where
             removalTime = t - interval
             finalQ = removeOldData removalTime newQ
         in FixedInterval interval finalQ
+
+newFixedInterval interval = FixedInterval interval newSummedQueue
