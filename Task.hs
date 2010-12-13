@@ -5,9 +5,10 @@ import System.Random
 import Data.List(transpose)
 
 data Task = Task {
-      idNum    :: Int
-    , arrival  :: Double
-    , size     :: Double
+      idNum      :: Int
+    , arrival    :: Double
+    , size       :: Double
+    , routingLog :: [(Int, Double)]
     } deriving (Show)
 
 data CurrentTask = CurrentTask {
@@ -73,7 +74,7 @@ piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id time state interval g0 =
 
 beginTask task = CurrentTask task (size task)
 
-delay (CompletedTask (Task id arrival size) completion) = completion - arrival
+delay (CompletedTask (Task id arrival size routingLog) completion) = completion - arrival
 
 compSize = size . compTask
 
