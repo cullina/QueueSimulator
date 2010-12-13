@@ -30,7 +30,7 @@ data Estimator a => SizeSplit a = SizeSplit {
 
 instance Estimator a => Router (SizeSplit a) where
     route ss (Task id arrival size) = 
-        if size > threshold ss then 1 else 0
+        sgn (size - threshold ss)
 
     updateRouter (SizeSplit estimator) (Task id arrival size) = 
         SizeSplit (updateEst estimator (size, arrival))
@@ -39,3 +39,27 @@ instance Estimator a => Router (SizeSplit a) where
 
 
 threshold (SizeSplit e) = workMedian $ parameters e
+
+{--------}
+
+data DirectSplit = DirectSplit {
+      conversion  :: Double -> Double
+    , sensitivity :: Double
+    , difference  :: Double
+    }
+
+instance Router DirectSplit where 
+    route (DirectSplit conv sens diff) (Task id arrival size) =
+        sgn (conv size - diff) 
+
+    updateRouter (DirectSplit conv sens diff) (Task id arrival size) =
+        let newSize = conv size
+            delta   = sens * newSize
+            newDiff = if newSize > diff
+                      then diff + delta
+                      else diff - delta
+        in DirectSplit conv sens newDiff
+
+    routerStats (DirectSplit conv sens diff) = [diff]
+
+sgn x = if x >= 0 then 1 else 0

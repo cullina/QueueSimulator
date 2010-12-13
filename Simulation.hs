@@ -48,3 +48,6 @@ runSystem (QueueSystem extractPS (t:ts) processor pStats completedTasks) =
         newPStats         = extractPS newProc : pStats
         newCompletedTasks = cTasks ++ completedTasks
     in runSystem (QueueSystem extractPS (t:ts) newProc newPStats newCompletedTasks)
+
+
+system1 tasks = QueueSystem (const 0) tasks xo
