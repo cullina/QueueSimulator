@@ -8,7 +8,7 @@ data Task = Task {
       idNum      :: Int
     , arrival    :: Double
     , size       :: Double
-    , routingLog :: [(Int, Double)]
+    , routingLog :: [(Int, [Double])]
     } deriving (Show)
 
 data CurrentTask = CurrentTask {
@@ -23,6 +23,13 @@ data CompletedTask = CompletedTask {
 
 
 
+addToLog (Task id arrival size routingLog) entry = 
+    Task id arrival size (entry : routingLog) 
+
+beginTask task = CurrentTask task (size task)
+
+{---------}
+
 uniform min range unif = range * unif + min
 
 
@@ -34,7 +41,7 @@ pareto recipAlpha min unif = min / (unif ** recipAlpha)
 
 paretoFromMean recipAlpha mean = pareto recipAlpha ((1 - recipAlpha) * mean) 
 
-
+{---------}
 
 poissonTaskStream spacing size gen = 
     taskStream (exponential spacing) (exponential size) 0 0 gen
@@ -48,7 +55,7 @@ taskStream spacingDist sizeDist id time g0 =
         (y, g2) = random g1
         spacing = spacingDist x
         size    = sizeDist y
-        task    = Task id time size
+        task    = Task id time size []
     in task : taskStream spacingDist sizeDist (id + 1) (time + spacing) g2
 
 
@@ -65,14 +72,12 @@ piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id time state interval g0 =
        else let (spacing, size) = if state
                                   then (spD1 x, szD1 y)
                                   else (spD2 x, szD2 y)
-                task            = Task id time size
+                task            = Task id time size []
                 newTime         = time + spacing
             in task : piecewiseTaskStream spD1 szD1 spD2 szD2 iDist (id + 1) newTime state interval g2
 
+{---------}
 
-
-
-beginTask task = CurrentTask task (size task)
 
 delay (CompletedTask (Task id arrival size routingLog) completion) = completion - arrival
 

@@ -73,11 +73,12 @@ instance (Router a) => Processor (ServerPair a) where
 
 
     acceptTask (ServerPair r a b) task = 
-        let serverNum = route r task
-            newR      = updateRouter r task
+        let serverNum   = route r task
+            newR        = updateRouter r task
+            newTask     = addToLog task (serverNum, routerStats r) 
         in if serverNum == 0
-           then ServerPair newR (acceptTask a task) b
-           else ServerPair newR a (acceptTask b task)
+           then ServerPair newR (acceptTask a newTask) b
+           else ServerPair newR a (acceptTask b newTask)
 
     stats (ServerPair r a b) =
         routerStats r
