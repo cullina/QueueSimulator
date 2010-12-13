@@ -5,7 +5,7 @@ import System.Random
 import Data.List(transpose)
 
 data Task = Task {
-      id       :: Int
+      idNum    :: Int
     , arrival  :: Double
     , size     :: Double
     } deriving (Show)
