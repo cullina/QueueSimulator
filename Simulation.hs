@@ -47,7 +47,7 @@ runSystem (QueueSystem (t:ts) processor) =
     in cTasks ++ runSystem (QueueSystem (t:ts) newProc)
 
 
-exampleProc1 = newServerPair $ newRoundRobin
+exampleProc1 = newServerPair newRoundRobin
 
 exampleProc2 = newServerPair $ SizeSplit $ newRecipEst $ newExpAccum 1
 
@@ -60,4 +60,4 @@ newEstProc estimator accumulator decay =
 newDirProc function sensitivity =
     newServerPair $ newDirectSplit function sensitivity
 
-newStream load gen = paretoTaskStream 0.5 2 load gen
+newStream = paretoTaskStream 0.5 2

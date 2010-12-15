@@ -33,7 +33,7 @@ beginTask task = CurrentTask task (size task)
 uniform min range unif = range * unif + min
 
 
-exponential mean unif = -1 * mean * (log unif)
+exponential mean unif = -1 * mean * log unif
 
 
 pareto recipAlpha min unif = min / (unif ** recipAlpha)
@@ -43,11 +43,11 @@ paretoFromMean recipAlpha mean = pareto recipAlpha ((1 - recipAlpha) * mean)
 
 {---------}
 
-poissonTaskStream spacing size gen = 
-    taskStream (exponential spacing) (exponential size) 0 0 gen
+poissonTaskStream spacing size = 
+    taskStream (exponential spacing) (exponential size) 0 0
 
-paretoTaskStream spacing alpha size gen = 
-    taskStream (exponential spacing) (paretoFromMean (1 / alpha) size) 0 0 gen
+paretoTaskStream spacing alpha size = 
+    taskStream (exponential spacing) (paretoFromMean (1 / alpha) size) 0 0
 
 
 taskStream spacingDist sizeDist id time g0 = 
@@ -64,7 +64,7 @@ piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id time state interval g0 =
     let (x, g1) = random g0
         (y, g2) = random g1
     in if time > interval
-       then let newInterval = interval + (iDist x)
+       then let newInterval = interval + iDist x
                 newState    = not state
                 spacing     = if state then spD1 y else spD2 y
                 newTime     = interval + spacing
@@ -83,17 +83,17 @@ delay (CompletedTask (Task id arrival size routingLog) completion) = completion 
 
 compSize = size . compTask
 
-slowdown t = (delay t) / (compSize t)
+slowdown t = delay t / compSize t
 
-sumStat f completed = sum (map f completed)
+sumStat completed f = sum (map f completed)
 
 
 statistics completed = 
     let l     = length completed
         len   = fromIntegral l
-        stats = map (\f -> sumStat f completed) [compSize, delay, slowdown]
+        stats = map (sumStat completed) [compSize, delay, slowdown]
     in  map (/ len) stats
 
 mergeStats statList = 
     let l = fromIntegral $ length statList
-    in map (\x -> (sum x) / l) (transpose statList) 
+    in map (\x -> sum x / l) (transpose statList) 

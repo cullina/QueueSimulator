@@ -81,7 +81,7 @@ data ExpAccum = ExpAccum {
     }
 
 instance Accumulator ExpAccum where
-    value x = (numerValE x) / (denomValE x)
+    value x = numerValE x / denomValE x
 
     update (ExpAccum r n d oldT) (x, t) =
         let decayFactor = exp (r * (oldT - t))
