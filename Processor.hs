@@ -20,15 +20,15 @@ data SimpleServer = SimpleServer {
       time      :: Double
     , queue     :: Queue Task
     , current   :: Maybe CurrentTask
-    }
+    } deriving (Show)
 
 instance Processor SimpleServer where
 
     acceptTask (SimpleServer time q task) newTask = 
         SimpleServer time (enq q newTask) task
 
-    runToTime (SimpleServer time q Nothing) targetTime =
-        runToTime' (SimpleServer time q Nothing) targetTime []
+    runToTime ss targetTime =
+        runToTime' ss targetTime []
 
 
 {- idle processor -}    

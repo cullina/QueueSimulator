@@ -6,32 +6,22 @@ import Estimator
 import Accumulator
 import Task
 import System.Random
+import Data.List(transpose)
 
-{-
-system1 :: Double -> Double -> Int -> QueueSystem SimpleServer
+simulate numTasks stream proc seed = 
+    statistics . take numTasks . runSystem $ QueueSystem (stream (mkStdGen seed)) proc
+   
 
-system1 load decay = newSystem decay . paretoTaskStream 1 2 load . mkStdGen
-
-
-system2 :: Double -> Double -> Int -> QueueSystem (ServerPair RoundRobin)
-
-system2 load decay = newSystem decay . paretoTaskStream 0.5 2 load . mkStdGen
-
-
-system3 :: Double -> Double -> Int -> QueueSystem (ServerPair SizeSplit)
-
-system3 load decay = newSystem decay . paretoTaskStream 0.5 2 load . mkStdGen
+simulation1 runs len seed = 
+    let stream = poissonTaskStream 1 0.5
+    in massSimulate runs len stream newSingleServer seed
 
 
+massSimulate numSeeds numTasks stream proc seed = 
+    let seeds = map (+ seed) [0 .. numSeeds - 1]
+        runs  = map (simulate numTasks stream proc) seeds 
+    in runs
 
-simulate numTasks system load decay seed = 
-    statistics . take numTasks . runSystem $ system load decay seed
-    
-
-massSimulate numSeeds numTasks system load decay seed = 
-    let seeds = map (+ seed) [1 .. numSeeds]
-    in mergeStats $ map (simulate numTasks system load decay) seeds 
--}
 
 {--------}
 
@@ -44,7 +34,7 @@ data (Processor a) => QueueSystem a = QueueSystem {
 
 runSystem (QueueSystem (t:ts) processor) =
     let (newProc, cTasks) = step processor t
-    in cTasks ++ runSystem (QueueSystem (t:ts) newProc)
+    in cTasks ++ runSystem (QueueSystem ts newProc)
 
 
 exampleProc1 = newServerPair newRoundRobin
@@ -60,4 +50,8 @@ newEstProc estimator accumulator decay =
 newDirProc function sensitivity =
     newServerPair $ newDirectSplit function sensitivity
 
-newStream = paretoTaskStream 0.5 2
+
+newStream size spacing = paretoTaskStream 0.5 2 size spacing
+{-
+streams seed = map ($ mkStdGen) $ map (poissonTaskStream 1.0 . (*) 0.1) [1 .. 10]
+-}

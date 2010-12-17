@@ -9,8 +9,8 @@ class Accumulator a where
 {--------}
 
 data SimpleAccum = SimpleAccum {
-      sum :: Double
-    , count :: Double
+      accumS :: Double
+    , count  :: Double
     }
 
 instance Accumulator SimpleAccum where
