@@ -2,7 +2,7 @@ module Task where
 
 import System.Random
 
-import Data.List(transpose)
+import Data.List(transpose, foldl')
 
 data Task = Task {
       idNum      :: Int
@@ -78,6 +78,21 @@ piecewiseTaskStream spD1 szD1 spD2 szD2 iDist id time state interval g0 =
 
 {---------}
 
+data TaskStats = TaskStats !Double !Double !Double !Double !Int
+
+instance Show TaskStats where
+    show (TaskStats a b c d e) = 
+        let digits      = 6
+            len         = fromIntegral e
+            size        = take digits $ show $ a / len
+            delay       = take digits $ show $ b / len
+            scaledDelay = take digits $ show $ b / a
+            slowdown    = take digits $ show $ c / len
+            rate        = take digits $ show $ d / len
+        in size ++ " " ++ delay ++ " " ++ scaledDelay ++ " " ++ 
+           slowdown ++ " " ++ rate ++ " " ++ show e ++ "\n"
+            
+
 
 delay (CompletedTask (Task id arrival size routingLog) completion) = completion - arrival
 
@@ -85,15 +100,12 @@ compSize = size . compTask
 
 slowdown t = delay t / compSize t
 
-sumStat completed f = sum (map f completed)
+taskStats t = TaskStats (compSize t) (delay t) (slowdown t) (completion t) 0
+
+sumStats (TaskStats a b c d e) (TaskStats f g h i _) = 
+    TaskStats (a + f) (b + g) (c + h) (max d i) (e + 1)
+
+statistics = foldl' sumStats (TaskStats 0 0 0 0 0) . map taskStats
 
 
-statistics completed = 
-    let l     = length completed
-        len   = fromIntegral l
-        stats = map (sumStat completed) [compSize, delay, slowdown]
-    in  map (/ len) stats
-
-mergeStats statList = 
-    let l = fromIntegral $ length statList
-    in map (\x -> sum x / l) (transpose statList) 
+showWLines list = concatMap ((++ "\n") . show) list
